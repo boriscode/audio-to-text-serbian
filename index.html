@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>File Upload</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1.5.10/css/pico.min.css">
+    <style>
+       
+
+        .loader {
+            border: 16px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 16px solid #3498db;
+            width: 120px;
+            height: 120px;
+            animation: spin 2s linear infinite;
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 999;
+        }
+
+        #overlay {
+            position: fixed;
+            display: none;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 2;
+        }
+        .copy {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            
+        }
+        .copy-icon {
+    
+            background-image: url("duplicate.png");
+            background-repeat: no-repeat;
+            background-size: cover;
+            cursor: pointer;
+            width: 30px;
+            height: 30px;
+}
+       
+         article{
+            position:relative;
+         }
+
+        @keyframes spin {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+     <main class="container">
+        <p>Namenjen je za prepoznavanje srpskog jezika</p>
+    <div id="overlay"></div>
+    <div class="loader" id="loader"></div>
+    <form id="upload-form" class="pico-form">
+        <label for="api-key">Api Kljuc</label>
+        <input type="text" id="api-key" placeholder="Unesi api kljuc" required />
+        <label for="file-input">Fajl ne moze biti veci od 25mb</label>
+        <input type="file" id="file-input" accept=".mp3"  />
+        <button type="submit" class="pico-button pico-blue">Upload</button>
+    </form>
+     <article>
+        <div class="copy">
+            <div id="copyButton" class="copy-icon" ></div>
+            <div id="confirmation" style="display: none;">Copied!</div>
+        </div>
+        
+        
+    <div id="response" >
+        
+    </div>
+    
+     
+
+
+    </article>
+    
+     </main>
+     
+     <script>
+      document.getElementById('copyButton').addEventListener('click', async function() {
+    
+    let textToCopy = document.getElementById('response').innerText;
+
+    try {
+        await navigator.clipboard.writeText(textToCopy);
+        
+        let confirmation = document.getElementById('confirmation');
+        let copyBTN = document.getElementById('copyButton');
+
+        confirmation.style.display = 'block';
+        copyBTN.style.display='none';
+        
+        setTimeout(function() {
+            copyBTN.style.display='block';
+            confirmation.style.display = 'none';
+        }, 2000);
+    } catch (err) {
+        console.error('Failed to copy text: ', err);
+    }
+       
+});
+
+        // Load the API key from local storage
+        document.getElementById('api-key').value = localStorage.getItem('api-key') || '';
+    
+        document.getElementById('upload-form').addEventListener('submit', function(event) {
+            event.preventDefault(); 
+    
+            var apiKey = document.getElementById('api-key').value; 
+            var fileInput = document.getElementById('file-input');
+            var file = fileInput.files[0]; 
+    
+            
+            if (!file) {
+                alert('Please select a file!');
+                return;
+            }
+    
+            
+            localStorage.setItem('api-key', apiKey);
+    
+           
+            var formData = new FormData();
+            formData.append('file', file); 
+            formData.append('model', 'whisper-1');
+            formData.append('language', 'sr');
+            formData.append('prompt', 'ovaj tekst je na srpskom jeziku i na latinici. Slova su Šš, Đđ, Čč,Lj,Nj.');
+    
+            document.getElementById('loader').style.display = 'block'; 
+            document.getElementById('overlay').style.display = 'block'; 
+    
+          
+            fetch('https://api.openai.com/v1/audio/transcriptions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + apiKey, 
+                },
+                body: formData
+            })
+            .then(response => response.json()) 
+            .then(data => {
+                
+                console.log("error is : ", data.error);
+                document.getElementById('loader').style.display = 'none'; 
+                document.getElementById('overlay').style.display = 'none'; 
+    
+                
+                document.getElementById('response').textContent = data.text;
+            })
+            .catch(error => {
+                document.getElementById('loader').style.display = 'none'; 
+                document.getElementById('overlay').style.display = 'none'; 
+                console.error('Error:', error);
+            });
+        });
+        </script>
+</body>
+</html>
